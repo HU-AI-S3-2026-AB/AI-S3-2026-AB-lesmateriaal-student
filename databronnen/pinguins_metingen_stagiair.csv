@@ -1,0 +1,6 @@
+island,bill_length_mm,bill_depth_mm,flipper_length_mm,body_mass_g,sex
+Torgersen,42.1,19.1,195.0,4000.0,Male
+Biscoe,44.5,14.7,214.0,4850.0,Female
+Dream,51.3,19.2,193.0,3650.0,Male
+Dream,39.7,17.9,193.0,4250.0,Male
+Torgersen,42.8,18.5,195.0,4250.0,Male
