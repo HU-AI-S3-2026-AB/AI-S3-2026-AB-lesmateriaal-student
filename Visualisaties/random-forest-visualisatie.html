@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Random Forest — visueel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffffff;
+  --panel:#f5f9ff;
+  --panel-2:#eef5ff;
+  --ink:#0e2439;
+  --ink-soft:#43617c;
+  --ink-faint:#8aa2b8;
+  --blue:#1f6feb;
+  --blue-deep:#0f4fb5;
+  --blue-line:#cadcf7;
+  --blue-line-strong:#a9c8f2;
+  --amber:#f2960d;
+  --amber-deep:#c9760a;
+  --pass:#1f6feb;      /* klasse Geslaagd */
+  --fail:#f2960d;      /* klasse Gezakt   */
+  --good:#1f9d6b;
+  --bad:#e2513c;
+  --shadow:0 1px 2px rgba(15,79,181,.06), 0 8px 24px rgba(15,79,181,.06);
+  --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(1200px 600px at 80% -10%, #eaf2ff 0%, rgba(234,242,255,0) 60%),
+    var(--bg);
+  color:var(--ink);
+  font-family:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 22px 80px}
+header.top{margin-bottom:26px}
+.kicker{color:var(--blue);font-weight:600;letter-spacing:.02em;font-size:.86rem}
+h1{
+  font-family:"Spectral",Georgia,serif;
+  font-weight:600;
+  font-size:clamp(2rem,4.4vw,3.1rem);
+  line-height:1.05;
+  margin:.15em 0 .35em;
+  letter-spacing:-.01em;
+}
+h1 em{font-style:italic;color:var(--blue-deep)}
+.lede{max-width:64ch;color:var(--ink-soft);font-size:1.04rem}
+
+.panel{
+  background:var(--bg);
+  border:1px solid var(--blue-line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:22px 22px;
+  margin:20px 0;
+}
+.panel > .phead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.panel h2{
+  font-family:"Spectral",Georgia,serif;
+  font-weight:600;font-size:1.5rem;margin:0;letter-spacing:-.01em;
+}
+.step{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:26px;height:26px;border-radius:8px;
+  background:var(--blue);color:#fff;font-weight:700;font-size:.9rem;
+  font-family:"Spectral",serif;
+}
+.panel .desc{color:var(--ink-soft);margin:.2em 0 1.1em;max-width:74ch}
+
+/* Controls */
+.controls{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:18px 22px;
+  align-items:end;
+}
+.ctl label{display:block;font-size:.82rem;font-weight:600;color:var(--ink-soft);margin-bottom:6px}
+.ctl .val{color:var(--blue-deep);font-variant-numeric:tabular-nums}
+input[type=range]{
+  -webkit-appearance:none;width:100%;height:6px;border-radius:6px;
+  background:linear-gradient(90deg,var(--blue) var(--fill,50%),var(--panel-2) var(--fill,50%));
+  outline:none;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:#fff;border:2.5px solid var(--blue);box-shadow:0 1px 3px rgba(15,79,181,.35);cursor:pointer;
+}
+input[type=range]::-moz-range-thumb{
+  width:16px;height:16px;border-radius:50%;background:#fff;border:2.5px solid var(--blue);cursor:pointer;
+}
+.ctl input[type=number]{width:100%;border:1px solid var(--blue-line-strong);background:#fff;font:inherit;font-size:.9rem;color:var(--ink);padding:8px 10px;border-radius:9px}
+.ctl input[type=number]:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(31,111,235,.15)}
+.seedrow{display:flex;gap:8px}
+.seedrow input{flex:1;min-width:0}
+.seedrow .btn{padding:8px 13px;font-size:1rem;line-height:1}
+.seg{display:inline-flex;background:var(--panel-2);border:1px solid var(--blue-line);border-radius:10px;padding:3px;gap:3px}
+.seg button{
+  border:none;background:transparent;color:var(--ink-soft);font:inherit;font-size:.85rem;font-weight:600;
+  padding:6px 12px;border-radius:7px;cursor:pointer;transition:.15s;
+}
+.seg button.active{background:var(--blue);color:#fff;box-shadow:0 1px 3px rgba(15,79,181,.3)}
+.btn{
+  border:1px solid var(--blue-line-strong);background:#fff;color:var(--blue-deep);
+  font:inherit;font-weight:600;font-size:.9rem;padding:9px 16px;border-radius:10px;cursor:pointer;
+  transition:.15s;display:inline-flex;align-items:center;gap:8px;
+}
+.btn:hover{background:var(--panel-2)}
+.btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn.primary:hover{background:var(--blue-deep)}
+.btn.ghost{border-style:dashed}
+.btn.sm{padding:5px 10px;font-size:.82rem;border-radius:8px}
+.row-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+
+/* Data + plot layout */
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:26px}
+@media(max-width:880px){.split{grid-template-columns:1fr}}
+.subhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.subhead h3{font-size:1rem;margin:0;font-weight:700;display:flex;align-items:center;gap:8px}
+.dot{width:11px;height:11px;border-radius:50%;display:inline-block}
+.dot.pass{background:var(--pass)} .dot.fail{background:var(--fail)}
+.tbl-scroll{border:1px solid var(--blue-line);border-radius:12px;overflow:auto;max-height:270px}
+table{border-collapse:collapse;width:100%;font-size:.86rem}
+th{
+  position:sticky;top:0;background:var(--panel);color:var(--ink-soft);
+  font-weight:600;text-align:left;padding:9px 10px;border-bottom:1px solid var(--blue-line);white-space:nowrap;
+}
+td{padding:4px 6px;border-bottom:1px solid #eef3fb}
+tr:last-child td{border-bottom:none}
+td input, td select{
+  width:100%;min-width:56px;border:1px solid transparent;background:transparent;
+  font:inherit;font-size:.86rem;color:var(--ink);padding:5px 6px;border-radius:7px;
+}
+td input:hover,td select:hover{background:var(--panel-2)}
+td input:focus,td select:focus{outline:none;border-color:var(--blue);background:#fff}
+td.del{width:30px;text-align:center}
+.xbtn{border:none;background:transparent;color:var(--ink-faint);cursor:pointer;font-size:1rem;line-height:1;padding:2px 6px;border-radius:6px}
+.xbtn:hover{color:var(--bad);background:#fff}
+
+.plotcard{background:var(--panel);border:1px solid var(--blue-line);border-radius:12px;padding:14px}
+.plotcard canvas{display:block;width:100%;height:auto;border-radius:8px;cursor:crosshair}
+.axis-cap{display:flex;justify-content:space-between;color:var(--ink-faint);font-size:.76rem;margin-top:6px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.8rem;color:var(--ink-soft);margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.lg-square{width:11px;height:11px;border:2px solid var(--ink-soft);border-radius:2px}
+
+/* Forest grid */
+.forest-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
+.tree{
+  border:1px solid var(--blue-line);border-radius:12px;background:#fff;overflow:hidden;display:flex;flex-direction:column;
+}
+.tree .th{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:10px 12px;background:var(--panel);border-bottom:1px solid var(--blue-line);
+}
+.tree .th b{font-size:.92rem}
+.tree .th .acc{font-size:.76rem;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.tree .body{padding:10px 12px;display:flex;flex-direction:column;gap:10px}
+.mini{display:flex;gap:12px;align-items:center}
+.mini canvas{border-radius:8px;border:1px solid var(--blue-line);background:#fff}
+.mini .meta{font-size:.76rem;color:var(--ink-soft);line-height:1.5}
+.mini .meta b{color:var(--ink)}
+.mini .feat{display:inline-block;margin-top:4px;font-size:.72rem;color:var(--blue-deep);background:var(--panel-2);border:1px solid var(--blue-line);padding:2px 7px;border-radius:20px}
+.treesvg-scroll{overflow-x:auto;border-top:1px dashed var(--blue-line);padding-top:8px}
+svg.tree-svg{display:block}
+
+/* Aggregation */
+.agg-top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:26px}
+@media(max-width:880px){.agg-top{grid-template-columns:1fr}}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin:2px 0 4px}
+.tp-chip{
+  border:1px solid var(--blue-line-strong);background:#fff;color:var(--ink);
+  font:inherit;font-size:.8rem;padding:6px 10px;border-radius:9px;cursor:pointer;transition:.12s;
+  display:inline-flex;align-items:center;gap:7px;
+}
+.tp-chip:hover{background:var(--panel-2)}
+.tp-chip.active{border-color:var(--blue);box-shadow:0 0 0 2px rgba(31,111,235,.18)}
+.tp-chip .mk{width:9px;height:9px;border-radius:2px;border:2px solid}
+.votebox{background:var(--panel);border:1px solid var(--blue-line);border-radius:12px;padding:16px}
+.votes{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+.vote{
+  width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-size:.78rem;font-weight:700;color:#fff;position:relative;
+}
+.vote small{position:absolute;top:-7px;right:-5px;font-size:.6rem;background:#fff;color:var(--ink-soft);border:1px solid var(--blue-line);border-radius:6px;padding:0 3px;font-weight:600}
+.tally{display:flex;height:30px;border-radius:9px;overflow:hidden;border:1px solid var(--blue-line);margin:10px 0}
+.tally .seg-p{display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.82rem;transition:.3s}
+.result-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:.95rem;margin-top:6px}
+.badge{padding:3px 10px;border-radius:20px;font-weight:700;font-size:.82rem}
+.badge.pass{background:rgba(31,111,235,.12);color:var(--blue-deep)}
+.badge.fail{background:rgba(242,150,13,.14);color:var(--amber-deep)}
+.badge.ok{background:rgba(31,157,107,.14);color:var(--good)}
+.badge.no{background:rgba(226,81,60,.14);color:var(--bad)}
+
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:4px}
+.metric{background:#fff;border:1px solid var(--blue-line);border-radius:12px;padding:14px 16px}
+.metric .k{font-size:.78rem;color:var(--ink-soft);font-weight:600}
+.metric .v{font-family:"Spectral",serif;font-weight:600;font-size:2.1rem;line-height:1;margin-top:4px;font-variant-numeric:tabular-nums}
+.metric .v.blue{color:var(--blue-deep)} .metric .v.soft{color:var(--ink-soft)}
+.metric .sub{font-size:.76rem;color:var(--ink-faint);margin-top:4px}
+.note{font-size:.85rem;color:var(--ink-soft);background:var(--panel-2);border-left:3px solid var(--blue);padding:10px 14px;border-radius:0 8px 8px 0;margin-top:14px}
+.kbd{font-family:"Spectral",serif;font-style:italic}
+footer{color:var(--ink-faint);font-size:.82rem;text-align:center;margin-top:30px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>Een random forest</h1>
+</header>
+
+<!-- CONTROLS -->
+<section class="panel">
+  <div class="phead"><span class="step">1</span><h2>Het bos afstellen</h2></div>
+  <div class="controls">
+    <div class="ctl">
+      <label>Aantal bomen <span class="val" id="v-n">5</span></label>
+      <input type="range" id="s-n" min="1" max="12" value="5" step="1">
+    </div>
+    <div class="ctl">
+      <label>Max. diepte per boom <span class="val" id="v-d">3</span></label>
+      <input type="range" id="s-d" min="1" max="5" value="3" step="1">
+    </div>
+    <div class="ctl">
+      <label>Kenmerken per splitsing</label>
+      <div class="seg" id="seg-mf">
+        <button data-mf="1" class="active">Random (1)</button>
+        <button data-mf="2">Beide (2)</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <label>Bootstrap-steekproef</label>
+      <div class="seg" id="seg-bs">
+        <button data-bs="1" class="active">Aan</button>
+        <button data-bs="0">Uit</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <label>Seed</label>
+      <div class="seedrow">
+        <input type="number" id="s-seed" value="12345" min="0" step="1">
+        <button class="btn" id="btn-seed" title="Willekeurige seed">↻</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DATA -->
+<section class="panel">
+  <div class="phead"><span class="step">2</span><h2>De dataset</h2></div>
+  <div class="split">
+    <div>
+      <div class="subhead">
+        <h3><span class="dot pass"></span><span class="dot fail"></span> Trainingsdata</h3>
+        <span id="train-count" style="font-size:.8rem;color:var(--ink-faint)"></span>
+      </div>
+      <div class="tbl-scroll">
+        <table id="train-table"><thead><tr>
+          <th>Studie-uren</th><th>Proeftentamen</th><th>Uitkomst</th><th></th>
+        </tr></thead><tbody></tbody></table>
+      </div>
+      <div class="row-actions">
+        <button class="btn ghost sm" id="add-train">+ rij toevoegen</button>
+        <button class="btn sm" id="reset-data">standaarddata herstellen</button>
+      </div>
+    </div>
+    <div>
+      <div class="subhead"><h3>Kenmerkruimte</h3></div>
+      <div class="plotcard">
+        <canvas id="main-canvas" width="640" height="440"></canvas>
+        <div class="axis-cap"><span>Studie-uren →</span><span>↑ Proeftentamen</span></div>
+        <div class="legend">
+          <span><span class="dot pass"></span> Geslaagd</span>
+          <span><span class="dot fail"></span> Gezakt</span>
+          <span><span class="lg-square"></span> Testpunt (klik om te kiezen)</span>
+          <span>Achtergrond = stem­verhouding van het hele bos</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOREST -->
+<section class="panel">
+  <div class="phead"><span class="step">3</span><h2>De bomen</h2></div>
+  <div class="forest-grid" id="forest"></div>
+</section>
+
+<!-- AGGREGATION -->
+<section class="panel">
+  <div class="phead"><span class="step">4</span><h2>Stemmen tellen &amp; toetsen</h2></div>
+
+  <div class="agg-top">
+    <div>
+      <div class="subhead">
+        <h3>Testset</h3>
+        <span id="test-count" style="font-size:.8rem;color:var(--ink-faint)"></span>
+      </div>
+      <div class="tbl-scroll" style="max-height:230px">
+        <table id="test-table"><thead><tr>
+          <th>Studie-uren</th><th>Proeftentamen</th><th>Echt</th><th>Bos</th><th></th>
+        </tr></thead><tbody></tbody></table>
+      </div>
+      <div class="row-actions">
+        <button class="btn ghost sm" id="add-test">+ testpunt</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="subhead"><h3>Stemming voor het gekozen punt</h3></div>
+      <div class="votebox" id="votebox"></div>
+    </div>
+  </div>
+
+  <div class="metrics" style="margin-top:18px">
+    <div class="metric"><div class="k">Nauwkeurigheid — hele bos</div><div class="v blue" id="m-forest">–</div><div class="sub" id="m-forest-sub"></div></div>
+    <div class="metric"><div class="k">Gemiddelde losse boom</div><div class="v soft" id="m-tree">–</div><div class="sub">gemiddeld over alle bomen</div></div>
+    <div class="metric"><div class="k">Winst door stemmen</div><div class="v" id="m-gain">–</div><div class="sub">bos − gemiddelde boom</div></div>
+  </div>
+</section>
+
+<footer>Gebouwd met puur HTML, CSS &amp; JavaScript — een echt CART-bos met Gini-splitsingen, bootstrap-steekproeven en meerderheidsstemming.</footer>
+</div>
+
+<script>
+/* ============================================================
+   Random Forest — from scratch
+   ============================================================ */
+
+// ---------- utilities ----------
+function mulberry32(a){
+  return function(){
+    a|=0; a=a+0x6D2B79F5|0;
+    let t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return ((t^t>>>14)>>>0)/4294967296;
+  };
+}
+const FEATS=['uren','score'];
+const FEAT_LABEL={uren:'Uren',score:'Proef'};
+const DOMAIN={uren:[0,20],score:[0,100]};
+const CLASS_LABEL={0:'Gezakt',1:'Geslaagd'};
+const CLASS_COLOR={0:'#f2960d',1:'#1f6feb'};
+const CLASS_TINT ={0:[249,220,180],1:[186,212,247]};
+
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function round(v,d){const p=Math.pow(10,d||0);return Math.round(v*p)/p;}
+
+// ---------- default data (deterministic) ----------
+function makeDefault(seed,count){
+  const r=mulberry32(seed), out=[];
+  for(let i=0;i<count;i++){
+    const uren=round(r()*20,1);
+    const score=Math.round(r()*100);
+    const s=(uren/20)*50+(score/100)*50+(r()*24-12); // 0..~100 with noise
+    out.push({uren,score,y:s>50?1:0});
+  }
+  return out;
+}
+let trainData=makeDefault(20250901,26);
+let testData =makeDefault(778812,10);
+
+// ---------- decision tree (CART, Gini) ----------
+function classCounts(rows){const c={0:0,1:0};for(const r of rows)c[r.y]++;return c;}
+function gini(rows){
+  const n=rows.length; if(!n)return 0;
+  const c=classCounts(rows);
+  let g=1; for(const k in c){const p=c[k]/n; g-=p*p;} return g;
+}
+function majority(rows){const c=classCounts(rows);return c[1]>=c[0]?1:0;}
+
+function pickFeatures(maxFeatures,rng){
+  if(maxFeatures>=FEATS.length) return FEATS.slice();
+  // choose maxFeatures distinct features
+  const pool=FEATS.slice(), out=[];
+  for(let i=0;i<maxFeatures;i++){
+    const idx=Math.floor(rng()*pool.length);
+    out.push(pool.splice(idx,1)[0]);
+  }
+  return out;
+}
+
+function buildTree(rows,depth,params,rng){
+  const counts=classCounts(rows);
+  const node={depth,samples:rows.length,counts,prediction:majority(rows),impurity:gini(rows)};
+  if(depth>=params.maxDepth || node.impurity===0 || rows.length<2){node.leaf=true;return node;}
+  const feats=pickFeatures(params.maxFeatures,rng);
+  let best=null;
+  for(const f of feats){
+    const vals=[...new Set(rows.map(r=>r[f]))].sort((a,b)=>a-b);
+    for(let i=0;i<vals.length-1;i++){
+      const thr=(vals[i]+vals[i+1])/2;
+      const L=rows.filter(r=>r[f]<=thr), R=rows.filter(r=>r[f]>thr);
+      if(!L.length||!R.length)continue;
+      const wg=(L.length*gini(L)+R.length*gini(R))/rows.length;
+      if(!best||wg<best.wg) best={f,thr,wg,L,R};
+    }
+  }
+  if(!best){node.leaf=true;return node;}
+  node.leaf=false;node.feature=best.f;node.threshold=best.thr;node.usedFeatures=feats;
+  node.left =buildTree(best.L,depth+1,params,rng);
+  node.right=buildTree(best.R,depth+1,params,rng);
+  return node;
+}
+function predictTree(node,row){
+  let n=node;
+  while(!n.leaf) n=(row[n.feature]<=n.threshold)?n.left:n.right;
+  return n.prediction;
+}
+
+// ---------- the forest ----------
+let params={n:5,maxDepth:3,maxFeatures:1,bootstrap:1};
+let forestSeed=12345;
+let forest=[];
+
+function trainForest(){
+  forest=[];
+  const N=trainData.length;
+  for(let t=0;t<params.n;t++){
+    const rng=mulberry32(forestSeed*131+t*977+7);
+    let sample, counts=new Array(N).fill(0);
+    if(params.bootstrap){
+      sample=[];
+      for(let i=0;i<N;i++){const idx=Math.floor(rng()*N);sample.push(trainData[idx]);counts[idx]++;}
+    }else{
+      sample=trainData.slice(); counts=counts.map(()=>1);
+    }
+    const root=buildTree(sample,0,params,rng);
+    const oob=[]; for(let i=0;i<N;i++) if(counts[i]===0) oob.push(i);
+    forest.push({root,counts,oob,unique:counts.filter(c=>c>0).length});
+  }
+}
+function predictForestDetailed(row){
+  const votes=forest.map(tr=>predictTree(tr.root,row));
+  let c1=0;for(const v of votes)c1+=v; const c0=votes.length-c1;
+  return {votes,c0,c1,pred:c1>=c0?1:0,prob:votes.length?c1/votes.length:0.5};
+}
+function predictForest(row){return predictForestDetailed(row).pred;}
+
+// ============================================================
+//  RENDERING
+// ============================================================
+const $=id=>document.getElementById(id);
+let selectedTest=0;
+
+// ---- geometry for main plot ----
+const PAD={l:46,r:16,t:16,b:34};
+function makeScale(canvas){
+  const W=canvas.width,H=canvas.height;
+  const [ux0,ux1]=DOMAIN.uren,[sy0,sy1]=DOMAIN.score;
+  const px=u=>PAD.l+(u-ux0)/(ux1-ux0)*(W-PAD.l-PAD.r);
+  const py=s=>H-PAD.b-(s-sy0)/(sy1-sy0)*(H-PAD.t-PAD.b);
+  const inv=(cx,cy)=>({
+    uren:clamp(ux0+(cx-PAD.l)/(W-PAD.l-PAD.r)*(ux1-ux0),ux0,ux1),
+    score:clamp(sy0+(H-PAD.b-cy)/(H-PAD.t-PAD.b)*(sy1-sy0),sy0,sy1)
+  });
+  return {px,py,inv,W,H};
+}
+
+function drawMain(){
+  const cv=$('main-canvas'),ctx=cv.getContext('2d');
+  const sc=makeScale(cv);
+  ctx.clearRect(0,0,sc.W,sc.H);
+
+  // decision region (forest probability) — coarse blocks
+  const step=8;
+  for(let x=PAD.l;x<sc.W-PAD.r;x+=step){
+    for(let y=PAD.t;y<sc.H-PAD.b;y+=step){
+      const pt=sc.inv(x+step/2,y+step/2);
+      const p=predictForestDetailed({uren:pt.uren,score:pt.score}).prob;
+      const t=CLASS_TINT[1],f=CLASS_TINT[0];
+      const R=Math.round(f[0]+(t[0]-f[0])*p);
+      const G=Math.round(f[1]+(t[1]-f[1])*p);
+      const B=Math.round(f[2]+(t[2]-f[2])*p);
+      ctx.fillStyle=`rgba(${R},${G},${B},0.9)`;
+      ctx.fillRect(x,y,step,step);
+    }
+  }
+  // grid frame
+  ctx.strokeStyle='#dce8fb';ctx.lineWidth=1;
+  ctx.strokeRect(PAD.l,PAD.t,sc.W-PAD.l-PAD.r,sc.H-PAD.t-PAD.b);
+  // axis ticks
+  ctx.fillStyle='#8aa2b8';ctx.font='11px Inter, sans-serif';ctx.textAlign='center';
+  for(let u=0;u<=20;u+=5){ctx.fillText(u,sc.px(u),sc.H-PAD.b+16);}
+  ctx.textAlign='right';ctx.textBaseline='middle';
+  for(let s=0;s<=100;s+=25){ctx.fillText(s,PAD.l-8,sc.py(s));}
+  ctx.textBaseline='alphabetic';ctx.textAlign='left';
+
+  // training points
+  for(const d of trainData){
+    ctx.beginPath();ctx.arc(sc.px(d.uren),sc.py(d.score),6,0,7);
+    ctx.fillStyle=CLASS_COLOR[d.y];ctx.fill();
+    ctx.lineWidth=1.5;ctx.strokeStyle='rgba(255,255,255,.85)';ctx.stroke();
+  }
+  // test points (squares)
+  testData.forEach((d,i)=>{
+    const x=sc.px(d.uren),y=sc.py(d.score);
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.lineWidth=(i===selectedTest)?3:2;
+    ctx.strokeStyle=CLASS_COLOR[d.y];
+    ctx.fillStyle='rgba(255,255,255,.9)';
+    ctx.beginPath();ctx.rect(-7,-7,14,14);ctx.fill();ctx.stroke();
+    if(i===selectedTest){ctx.strokeStyle='#0e2439';ctx.lineWidth=1;ctx.beginPath();ctx.rect(-10,-10,20,20);ctx.stroke();}
+    ctx.restore();
+  });
+  cv._scale=sc;
+}
+$('main-canvas').addEventListener('click',e=>{
+  const cv=$('main-canvas'),sc=cv._scale;if(!sc)return;
+  const rect=cv.getBoundingClientRect();
+  const cx=(e.clientX-rect.left)*(cv.width/rect.width);
+  const cy=(e.clientY-rect.top)*(cv.height/rect.height);
+  let bi=-1,bd=1e9;
+  testData.forEach((d,i)=>{
+    const dx=sc.px(d.uren)-cx,dy=sc.py(d.score)-cy,dist=dx*dx+dy*dy;
+    if(dist<bd){bd=dist;bi=i;}
+  });
+  if(bi>=0&&bd<400){selectedTest=bi;renderAggregation();drawMain();}
+});
+
+// ---- per-tree mini plot ----
+function drawTreeMini(canvas,tree){
+  const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;
+  const [ux0,ux1]=DOMAIN.uren,[sy0,sy1]=DOMAIN.score;
+  const px=u=>2+(u-ux0)/(ux1-ux0)*(W-4);
+  const py=s=>H-2-(s-sy0)/(sy1-sy0)*(H-4);
+  ctx.clearRect(0,0,W,H);
+  const step=6;
+  for(let x=0;x<W;x+=step)for(let y=0;y<H;y+=step){
+    const u=ux0+(x/W)*(ux1-ux0), s=sy1-(y/H)*(sy1-sy0);
+    const cls=predictTree(tree.root,{uren:u,score:s});
+    const t=CLASS_TINT[cls];
+    ctx.fillStyle=`rgb(${t[0]},${t[1]},${t[2]})`;
+    ctx.fillRect(x,y,step,step);
+  }
+  ctx.strokeStyle='#cadcf7';ctx.strokeRect(.5,.5,W-1,H-1);
+  // points: sampled solid (size by count), oob hollow grey
+  trainData.forEach((d,i)=>{
+    const c=tree.counts[i],x=px(d.uren),y=py(d.score);
+    if(c>0){
+      ctx.beginPath();ctx.arc(x,y,2.4+Math.min(c-1,3)*0.9,0,7);
+      ctx.fillStyle=CLASS_COLOR[d.y];ctx.fill();
+      ctx.lineWidth=1;ctx.strokeStyle='rgba(255,255,255,.9)';ctx.stroke();
+    }else{
+      ctx.beginPath();ctx.arc(x,y,2.6,0,7);
+      ctx.lineWidth=1.2;ctx.strokeStyle='#9fb3c8';ctx.stroke();
+    }
+  });
+}
+
+// ---- tree diagram (SVG) ----
+function layoutTree(root){
+  let leaf=0; const all=[];
+  (function rec(n){
+    if(n.leaf){n._x=leaf++;}
+    else{rec(n.left);rec(n.right);n._x=(n.left._x+n.right._x)/2;}
+    all.push(n);
+  })(root);
+  return {leaves:leaf,all};
+}
+function treeDepth(n){return n.leaf?0:1+Math.max(treeDepth(n.left),treeDepth(n.right));}
+
+function renderTreeSVG(root){
+  const {leaves}=layoutTree(root);
+  const depth=treeDepth(root);
+  const gapX=76,gapY=58,nodeW=64,nodeH=30;
+  const W=Math.max(leaves,1)*gapX, H=(depth+1)*gapY+8;
+  const cx=n=>n._x*gapX+gapX/2;
+  const cy=n=>n.depth*gapY+nodeH/2+6;
+  let edges='',nodes='';
+  (function rec(n){
+    if(!n.leaf){
+      for(const [child,lab,dx] of [[n.left,'ja',-1],[n.right,'nee',1]]){
+        const x1=cx(n),y1=cy(n)+nodeH/2,x2=cx(child),y2=cy(child)-nodeH/2;
+        const my=(y1+y2)/2;
+        edges+=`<path d="M${x1} ${y1} C ${x1} ${my}, ${x2} ${my}, ${x2} ${y2}" fill="none" stroke="#c2d6f2" stroke-width="1.6"/>`;
+        edges+=`<text x="${(x1+x2)/2+dx*3}" y="${my-2}" text-anchor="middle" font-size="9" fill="#8aa2b8">${lab}</text>`;
+      }
+      rec(n.left);rec(n.right);
+    }
+  })(root);
+  (function rec(n){
+    const x=cx(n),y=cy(n);
+    if(n.leaf){
+      const col=CLASS_COLOR[n.prediction];
+      const tint=CLASS_TINT[n.prediction];
+      nodes+=`<g>
+        <rect x="${x-nodeW/2}" y="${y-nodeH/2}" width="${nodeW}" height="${nodeH}" rx="8"
+          fill="rgb(${tint[0]},${tint[1]},${tint[2]})" stroke="${col}" stroke-width="1.5"/>
+        <text x="${x}" y="${y-1}" text-anchor="middle" font-size="10" font-weight="700" fill="#0e2439">${CLASS_LABEL[n.prediction]}</text>
+        <text x="${x}" y="${y+10}" text-anchor="middle" font-size="8" fill="#43617c">${n.counts[0]} · ${n.counts[1]}</text>
+      </g>`;
+    }else{
+      nodes+=`<g>
+        <rect x="${x-nodeW/2}" y="${y-nodeH/2}" width="${nodeW}" height="${nodeH}" rx="8"
+          fill="#ffffff" stroke="#1f6feb" stroke-width="1.4"/>
+        <text x="${x}" y="${y+3.5}" text-anchor="middle" font-size="10" font-weight="600" fill="#0f4fb5">${FEAT_LABEL[n.feature]} ≤ ${round(n.threshold,1)}</text>
+      </g>`;
+      rec(n.left);rec(n.right);
+    }
+  })(root);
+  return `<svg class="tree-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${edges}${nodes}</svg>`;
+}
+
+function treeAccuracy(tree){
+  if(!testData.length)return null;
+  let ok=0;for(const d of testData) if(predictTree(tree.root,d)===d.y)ok++;
+  return ok/testData.length;
+}
+
+function renderForest(){
+  const host=$('forest');host.innerHTML='';
+  forest.forEach((tr,i)=>{
+    const acc=treeAccuracy(tr);
+    const card=document.createElement('div');card.className='tree';
+    const featTxt=params.maxFeatures>=2?'beide kenmerken':'random 1 kenmerk/split';
+    card.innerHTML=`
+      <div class="th"><b>Boom ${i+1}</b><span class="acc">test: ${acc==null?'–':Math.round(acc*100)+'%'}</span></div>
+      <div class="body">
+        <div class="mini">
+          <canvas width="132" height="100"></canvas>
+          <div class="meta">
+            <b>${tr.unique}</b> unieke rijen<br>
+            <b>${tr.oob.length}</b> out-of-bag<br>
+            <span class="feat">${featTxt}</span>
+          </div>
+        </div>
+        <div class="treesvg-scroll"></div>
+      </div>`;
+    host.appendChild(card);
+    drawTreeMini(card.querySelector('canvas'),tr);
+    card.querySelector('.treesvg-scroll').innerHTML=renderTreeSVG(tr.root);
+  });
+}
+
+// ---- aggregation panel ----
+function renderTestChips(){
+  // built inside renderAggregation via votebox header? keep as table + chips row
+}
+function renderAggregation(){
+  const box=$('votebox');
+  if(!testData.length){box.innerHTML='<span style="color:var(--ink-faint)">Geen testpunten. Voeg er een toe.</span>';renderMetrics();return;}
+  if(selectedTest>=testData.length)selectedTest=0;
+  const d=testData[selectedTest];
+  const det=predictForestDetailed(d);
+  const correct=det.pred===d.y;
+
+  const chips=testData.map((t,i)=>{
+    const col=CLASS_COLOR[t.y];
+    return `<button class="tp-chip ${i===selectedTest?'active':''}" data-i="${i}">
+      <span class="mk" style="border-color:${col}"></span>#${i+1}</button>`;
+  }).join('');
+
+  const voteCells=det.votes.map((v,i)=>
+    `<div class="vote" style="background:${CLASS_COLOR[v]}">${v?'✓':'✗'}<small>${i+1}</small></div>`
+  ).join('');
+
+  const pPass=det.votes.length?det.c1/det.votes.length*100:50;
+  const tally=`<div class="tally">
+     ${det.c1?`<div class="seg-p" style="width:${pPass}%;background:${CLASS_COLOR[1]}">${det.c1}</div>`:''}
+     ${det.c0?`<div class="seg-p" style="width:${100-pPass}%;background:${CLASS_COLOR[0]}">${det.c0}</div>`:''}
+   </div>`;
+
+  box.innerHTML=`
+    <div style="font-size:.82rem;color:var(--ink-soft);margin-bottom:2px">Kies een testpunt</div>
+    <div class="chips">${chips}</div>
+    <div style="font-size:.86rem;margin:8px 0 2px">
+      Testpunt <b>#${selectedTest+1}</b> — ${d.uren} uur, proeftentamen ${d.score}.
+    </div>
+    <div class="votes">${voteCells}</div>
+    ${tally}
+    <div class="result-line">
+      <span>Meerderheid:</span>
+      <span class="badge ${det.pred?'pass':'fail'}">${CLASS_LABEL[det.pred]}</span>
+      <span>· echt:</span>
+      <span class="badge ${d.y?'pass':'fail'}">${CLASS_LABEL[d.y]}</span>
+      <span class="badge ${correct?'ok':'no'}">${correct?'correct':'fout'}</span>
+    </div>`;
+  box.querySelectorAll('.tp-chip').forEach(b=>b.onclick=()=>{selectedTest=+b.dataset.i;renderAggregation();drawMain();});
+  renderMetrics();
+}
+
+function renderMetrics(){
+  if(!testData.length){$('m-forest').textContent='–';$('m-tree').textContent='–';$('m-gain').textContent='–';return;}
+  let fok=0;for(const d of testData)if(predictForest(d)===d.y)fok++;
+  const fAcc=fok/testData.length;
+  let tSum=0;for(const tr of forest){let ok=0;for(const d of testData)if(predictTree(tr.root,d)===d.y)ok++;tSum+=ok/testData.length;}
+  const tAcc=forest.length?tSum/forest.length:0;
+  const gain=fAcc-tAcc;
+  $('m-forest').textContent=Math.round(fAcc*100)+'%';
+  $('m-forest-sub').textContent=`${fok} van ${testData.length} testpunten goed`;
+  $('m-tree').textContent=Math.round(tAcc*100)+'%';
+  const g=$('m-gain');
+  g.textContent=(gain>=0?'+':'')+Math.round(gain*100)+'%';
+  g.className='v '+(gain>0?'blue':gain<0?'':'soft');
+  g.style.color=gain>0?'var(--good)':gain<0?'var(--bad)':'var(--ink-soft)';
+}
+
+// ============================================================
+//  TABLES (editable)
+// ============================================================
+function numInput(val,key,onchange){
+  const [mn,mx]=DOMAIN[key];
+  const inp=document.createElement('input');
+  inp.type='number';inp.value=val;inp.min=mn;inp.max=mx;inp.step=(key==='uren'?0.5:1);
+  inp.onchange=()=>{let v=clamp(parseFloat(inp.value)||0,mn,mx);inp.value=v;onchange(v);};
+  return inp;
+}
+function classSelect(val,onchange){
+  const sel=document.createElement('select');
+  for(const k of [1,0]){const o=document.createElement('option');o.value=k;o.textContent=CLASS_LABEL[k];if(k===val)o.selected=true;sel.appendChild(o);}
+  sel.style.color=CLASS_COLOR[val];sel.style.fontWeight=600;
+  sel.onchange=()=>{const v=+sel.value;sel.style.color=CLASS_COLOR[v];onchange(v);};
+  return sel;
+}
+function buildTrainTable(){
+  const tb=$('train-table').querySelector('tbody');tb.innerHTML='';
+  trainData.forEach((d,i)=>{
+    const tr=document.createElement('tr');
+    const c1=document.createElement('td'),c2=document.createElement('td'),c3=document.createElement('td'),c4=document.createElement('td');
+    c4.className='del';
+    c1.appendChild(numInput(d.uren,'uren',v=>{d.uren=v;retrain();}));
+    c2.appendChild(numInput(d.score,'score',v=>{d.score=v;retrain();}));
+    c3.appendChild(classSelect(d.y,v=>{d.y=v;retrain();}));
+    const x=document.createElement('button');x.className='xbtn';x.textContent='×';
+    x.onclick=()=>{trainData.splice(i,1);buildTrainTable();retrain();};
+    c4.appendChild(x);
+    tr.append(c1,c2,c3,c4);tb.appendChild(tr);
+  });
+  $('train-count').textContent=trainData.length+' rijen';
+}
+function buildTestTable(){
+  const tb=$('test-table').querySelector('tbody');tb.innerHTML='';
+  testData.forEach((d,i)=>{
+    const tr=document.createElement('tr');
+    const c1=document.createElement('td'),c2=document.createElement('td'),c3=document.createElement('td'),c4=document.createElement('td'),c5=document.createElement('td');
+    c5.className='del';
+    c1.appendChild(numInput(d.uren,'uren',v=>{d.uren=v;refreshPredictionsOnly();}));
+    c2.appendChild(numInput(d.score,'score',v=>{d.score=v;refreshPredictionsOnly();}));
+    c3.appendChild(classSelect(d.y,v=>{d.y=v;refreshPredictionsOnly();}));
+    const pred=forest.length?predictForest(d):null;
+    c4.innerHTML=pred==null?'–':`<span class="badge ${pred?'pass':'fail'}" style="font-size:.72rem">${CLASS_LABEL[pred]}</span>`;
+    const x=document.createElement('button');x.className='xbtn';x.textContent='×';
+    x.onclick=()=>{testData.splice(i,1);if(selectedTest>=testData.length)selectedTest=0;buildTestTable();refreshPredictionsOnly();};
+    c5.appendChild(x);
+    tr.append(c1,c2,c3,c4,c5);
+    if(i===selectedTest)tr.style.background='#eef5ff';
+    tr.style.cursor='pointer';
+    tr.addEventListener('click',ev=>{if(ev.target.tagName==='INPUT'||ev.target.tagName==='SELECT'||ev.target.tagName==='BUTTON')return;selectedTest=i;renderAggregation();drawMain();buildTestTable();});
+    tb.appendChild(tr);
+  });
+  $('test-count').textContent=testData.length+' punten';
+}
+
+// ============================================================
+//  PIPELINE
+// ============================================================
+function retrain(){ trainForest(); drawMain(); renderForest(); buildTestTable(); renderAggregation(); }
+function refreshPredictionsOnly(){ drawMain(); buildTestTable(); renderAggregation(); }
+
+// ---------- controls wiring ----------
+function setFill(el){const p=(el.value-el.min)/(el.max-el.min)*100;el.style.setProperty('--fill',p+'%');}
+const sN=$('s-n'),sD=$('s-d');
+[sN,sD].forEach(setFill);
+sN.addEventListener('input',()=>{params.n=+sN.value;$('v-n').textContent=sN.value;setFill(sN);retrain();});
+sD.addEventListener('input',()=>{params.maxDepth=+sD.value;$('v-d').textContent=sD.value;setFill(sD);retrain();});
+$('seg-mf').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  [...e.currentTarget.children].forEach(x=>x.classList.remove('active'));b.classList.add('active');
+  params.maxFeatures=+b.dataset.mf;retrain();});
+$('seg-bs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  [...e.currentTarget.children].forEach(x=>x.classList.remove('active'));b.classList.add('active');
+  params.bootstrap=+b.dataset.bs;retrain();});
+const sSeed=$('s-seed');
+sSeed.addEventListener('change',()=>{
+  let v=parseInt(sSeed.value,10);
+  if(!Number.isFinite(v)||v<0)v=0;
+  sSeed.value=v; forestSeed=v; retrain();
+});
+$('btn-seed').addEventListener('click',()=>{
+  const v=Math.floor(Math.random()*1000000);
+  sSeed.value=v; forestSeed=v; retrain();
+});
+
+$('add-train').addEventListener('click',()=>{trainData.push({uren:round(Math.random()*20,1),score:Math.round(Math.random()*100),y:Math.random()>.5?1:0});buildTrainTable();retrain();});
+$('add-test').addEventListener('click',()=>{testData.push({uren:round(Math.random()*20,1),score:Math.round(Math.random()*100),y:Math.random()>.5?1:0});buildTestTable();refreshPredictionsOnly();});
+$('reset-data').addEventListener('click',()=>{trainData=makeDefault(20250901,26);testData=makeDefault(778812,10);selectedTest=0;buildTrainTable();buildTestTable();retrain();});
+
+// ---------- init ----------
+buildTrainTable();
+trainForest();
+buildTestTable();
+drawMain();
+renderForest();
+renderAggregation();
+</script>
+</body>
+</html>
